@@ -1,0 +1,65 @@
+name: ci
+
+# The crate is generated from the contract (ADR 0055). This workflow proves three things:
+#   1. src/generated/types.rs and src/generated/resources.rs are exactly what the
+#      generator (xtask) produces from api/openapi.sdk.json;
+#   2. fmt, clippy, the transport tests and the build pass;
+#   3. the examples run against the real sandbox, never against a fake of our API
+#      (ADR 0055, D7.4). Without the secret, step 3 fails: there is no "pass" without a
+#      backend.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  generated-and-unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.0 # pinned: the generated code goes through this toolchain's rustfmt
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Generated files match the contract
+        run: make check-generated
+      - name: Formatting
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: make clippy
+      - name: Tests
+        run: cargo test --workspace
+      - name: Build
+        run: cargo build --workspace --all-targets
+
+  sandbox:
+    # The examples are the suite against the real backend. A PR from a fork does not get
+    # the secret; in that case the reviewer runs the workflow by hand after the merge.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: generated-and-unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    concurrency:
+      # A single sandbox account: two runs at the same time would apply config
+      # documents on top of each other.
+      group: sandbox-examples
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Examples against api-sandbox.beinfi.com
+        env:
+          INFI_SECRET_KEY: ${{ secrets.INFI_SANDBOX_SECRET_KEY }}
+        run: cargo run --example run-all
