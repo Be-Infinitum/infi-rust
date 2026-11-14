@@ -83,7 +83,7 @@ The CI (`.github/workflows/ci.yml`) fails if:
 
 - `make check-generated` changes anything (the generated code does not match `api/openapi.sdk.json`);
 - `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test` or `cargo build` break;
-- any example in `examples/` fails against `api-sandbox.beinfi.com`, using the key in the `INFI_SANDBOX_SECRET_KEY` repository secret (an `sk_test_` key of a sandbox account that has an owner; the job fails when the secret is missing). The unit tests only cover the transport; the proof that the SDK talks to the API is the examples.
+- any example in `examples/` fails against `api-sandbox.beinfi.com`, using the key in the `INFI_SANDBOX_SECRET_KEY` repository secret (an `sk_test_` key of a sandbox account that has an owner; the job fails when the secret is missing). Each SDK repo uses its own sandbox account: the four CIs run at the same time, and on a shared account they race on its config (412 `plan_changed`) and on its rate limit (429). The unit tests only cover the transport; the proof that the SDK talks to the API is the examples.
 
 Common tasks: `make check` (everything except the sandbox), `make examples` (needs `INFI_SECRET_KEY`).
 
