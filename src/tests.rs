@@ -207,6 +207,7 @@ async fn post_sends_bearer_and_uuid_idempotency_key() {
     );
     assert_eq!(c.header("authorization"), Some("Bearer sk_live_x"));
     assert_eq!(c.header("accept"), Some("application/json"));
+    assert_eq!(c.header("user-agent"), Some(crate::USER_AGENT));
     assert!(is_uuid_v4(c.header("idempotency-key").unwrap()));
     assert_eq!(c.header("content-type"), Some("application/json"));
 }

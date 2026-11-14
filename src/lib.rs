@@ -15,6 +15,10 @@
 //! # }
 //! ```
 
+/// Identifies the SDK to the API: `beinfi-rust/<version>`. Cloudflare in front
+/// of the API blocks requests without a User-Agent, so every request sends it.
+pub const USER_AGENT: &str = concat!("beinfi-rust/", env!("CARGO_PKG_VERSION"));
+
 mod client;
 mod error;
 mod generated;

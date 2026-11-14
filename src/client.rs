@@ -329,6 +329,8 @@ impl Client {
             Ok(())
         };
         set("Accept", "application/json")?;
+        // Cloudflare in front of the API blocks requests without a User-Agent.
+        set("User-Agent", crate::USER_AGENT)?;
         set("Authorization", &format!("Bearer {}", inner.secret_key))?;
         for (k, v) in &req.headers {
             set(k, v)?;
